@@ -284,7 +284,7 @@ class ExperimentListPage extends React.Component<Props, State> {
   };
 
   getStatusString = (phase: string, status: string) => {
-    let statusValue = 'Status: Succeeded';
+    let statusValue = 'Status: In Progress';
     let retStatus = status;
     if (status.length > 0) {
       const values = status.split(':');
@@ -293,6 +293,8 @@ class ExperimentListPage extends React.Component<Props, State> {
       }
       if (status.includes('Failed')) {
         statusValue = 'Status: Failed';
+      } else if (status.includes('Succeeded')) {
+        statusValue = 'Status: Succeeded';
       }
     }
     return (
@@ -396,7 +398,9 @@ class ExperimentListPage extends React.Component<Props, State> {
               <Badge className={'virtualitem_badge_definition'}>IT8</Badge>
             </Tooltip>
             <Link
-              to={`/extensions/namespaces/${h.namespace}/iter8/${h.name}`}
+              to={`/extensions/namespaces/${h.namespace}/iter8/${h.name}?target=${h.targetService}&startTime=${
+                h.startedAt
+              }&endTime=${h.endedAt}&baseline=${h.baseline}&candidate=${h.candidate}`}
               key={'Experiment_' + h.namespace + '_' + h.namespace}
             >
               {h.name}

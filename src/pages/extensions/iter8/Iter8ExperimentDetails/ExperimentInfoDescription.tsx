@@ -29,6 +29,7 @@ interface ExperimentInfoDescriptionProps {
   namespace: string;
   experimentDetails?: Iter8ExpDetailsInfo;
   experiment: string;
+  duration: number;
   baseline: string;
   candidate: string;
 }

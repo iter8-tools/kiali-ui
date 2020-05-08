@@ -68,6 +68,12 @@ export interface Metric {
   query_template: string;
   sample_size_template: string;
 }
+
+export type NameValuePair = {
+  name: string;
+  value: any;
+};
+
 export interface Criteria {
   metric: string;
   tolerance: number;
@@ -75,3 +81,32 @@ export interface Criteria {
   sampleSize: number;
   stopOnFailure: boolean;
 }
+
+export interface ExperimentSpec {
+  name: string;
+  namespace: string;
+  service: string;
+  apiversion: string;
+  baseline: string;
+  candidate: string;
+  // canaryVersion: string;
+  trafficControl: TrafficControl;
+  criterias: Criteria[];
+}
+
+export const EmptyExperimentSpec = {
+  name: '',
+  namespace: 'default',
+  apiversion: 'v1',
+  service: '',
+  baseline: '',
+  candidate: '',
+  trafficControl: {
+    algorithm: 'check_and_increment',
+    interval: '30s',
+    maxIterations: 100,
+    maxTrafficPercentage: 50,
+    trafficStepSize: 2
+  },
+  criterias: []
+};

@@ -21,9 +21,13 @@ import { Iter8ExpDetailsInfo } from '../../../../types/Iter8';
 import RefreshButtonContainer from '../../../../components/Refresh/RefreshButton';
 import Iter8Dropdown from './Iter8Dropdown';
 import history from '../../../../app/History';
+import * as FilterHelper from '../../../../components/FilterList/FilterHelper';
+import { connect } from 'react-redux';
 
 import ExperimentInfoDescription from './ExperimentInfoDescription';
 import CriteriaInfoDescription from './CriteriaInfoDescription';
+import { KialiAppState } from '../../../../store/Store';
+import { durationSelector } from '../../../../store/Selectors';
 
 interface Props {
   namespace: string;
@@ -259,6 +263,7 @@ class ExperimentDetailsPage extends React.Component<RouteComponentProps<Props>, 
           experiment={this.props.match.params.name}
           target={this.state.target}
           experimentDetails={this.state.experiment}
+          duration={FilterHelper.currentDuration()}
           baseline={this.state.baseline}
           candidate={this.state.candidate}
         />
@@ -298,4 +303,13 @@ class ExperimentDetailsPage extends React.Component<RouteComponentProps<Props>, 
   }
 }
 
-export default ExperimentDetailsPage;
+const mapStateToProps = (state: KialiAppState) => ({
+  duration: durationSelector(state)
+});
+
+const ExperimentDetailsPageContainer = connect(
+  mapStateToProps,
+  null
+)(ExperimentDetailsPage);
+
+export default ExperimentDetailsPageContainer;
