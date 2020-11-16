@@ -12,6 +12,7 @@ import {
   FormSelectOption,
   Grid,
   GridItem,
+  Modal,
   TextInput,
   ButtonVariant
 } from '@patternfly/react-core';
@@ -53,6 +54,7 @@ type Props = {
 };
 
 export type TrafficState = {
+  showAddMatchWizard: boolean;
   addMatch: HttpMatch;
   addHeader: HeaderMatch;
   focusElementName: string;
@@ -60,6 +62,7 @@ export type TrafficState = {
 };
 
 export const initMatch = (): TrafficState => ({
+  showAddMatchWizard: false,
   addMatch: {
     uri: {
       match: '',
@@ -201,8 +204,22 @@ class ExperimentTrafficForm extends React.Component<Props, TrafficState> {
     });
   };
 
+  onShowAddMatchWizard = (show: boolean) => {
+    this.setState({
+      showAddMatchWizard: show
+    });
+  };
+
+  isAddMatchValid = () => {
+    return !(
+      (this.state.addMatch.uri.match.length === 0 || this.state.addMatch.uri.stringMatch.length === 0) &&
+      this.state.addMatch.headers.length === 0
+    );
+  };
+
   onAddMatchRules = () => {
     this.props.onAdd(initCriteria(), { name: '', gateway: '' }, this.state.addMatch);
+    this.onShowAddMatchWizard(false);
     this.setState({
       addMatch: {
         uri: {
@@ -285,103 +302,173 @@ class ExperimentTrafficForm extends React.Component<Props, TrafficState> {
     }));
   }
 
-  render() {
-    return this.props.matches
-      .map((match, i) => (
-        <>
-          <Card style={{ backgroundColor: i % 2 === 0 ? PfColors.GrayBackground : PfColors.White }}>
-            <CardHeader>
-              HTTP Match Request {i + 1}
-              <span style={{ float: 'right', paddingRight: '5px' }}>
-                <Button variant={ButtonVariant.secondary} onClick={() => this.props.onRemove('Match', i)}>
-                  Remove
-                </Button>
-              </span>
-            </CardHeader>
-            <CardBody>
-              <Grid gutter="md">
-                <GridItem span={6}>
-                  <FormGroup fieldId="matchSelect" label="URI Match criterion">
-                    <FormSelect id="match" value={match.uri.match} isDisabled>
-                      {MatchOptions.map((mt, index) => (
-                        <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
-                      ))}
-                    </FormSelect>
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={6}>
-                  <FormGroup fieldId="stringMatch" label="URI Match">
-                    <TextInput isDisabled id={'stringMatch'} placeholder="match string" value={match.uri.stringMatch} />
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={12}>
-                  <Table aria-label="HTTP Match Requests" cells={headerCells} rows={this.matchrows(match)}>
-                    <TableHeader />
-                    <TableBody />
-                  </Table>
-                </GridItem>
-              </Grid>
-            </CardBody>
-          </Card>
-          <Divider />
-        </>
-      ))
-      .concat(
-        <>
-          <Card>
-            <CardHeader>
-              New HTTP Match Request
-              <span style={{ float: 'right', paddingRight: '5px' }}>
-                <Button
-                  variant={ButtonVariant.secondary}
-                  isDisabled={
-                    (this.state.addMatch.uri.match.length === 0 || this.state.addMatch.uri.stringMatch.length === 0) &&
-                    this.state.addMatch.headers.length === 0
-                  }
-                  onClick={() => this.onAddMatchRules()}
+  renderAddMatchWizard = () => {
+    return (
+      <>
+        <Card>
+          <CardHeader>
+            New HTTP Match Request
+            <span style={{ float: 'right', paddingRight: '5px' }}>
+              <Button
+                variant={ButtonVariant.secondary}
+                isDisabled={!this.isAddMatchValid()}
+                onClick={() => this.onAddMatchRules()}
+              >
+                Add Match Rule
+              </Button>
+            </span>
+          </CardHeader>
+          <CardBody>
+            <Grid gutter="md">
+              <GridItem span={6}>
+                <FormGroup fieldId="matchSelect" label="URI Match criterion">
+                  <FormSelect id="match" value={this.state.addMatch.uri.match} onChange={this.onAddUriMatch}>
+                    {MatchOptions.map((mt, index) => (
+                      <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </GridItem>
+              <GridItem span={6}>
+                <FormGroup fieldId="stringMatch" label="Match String">
+                  <TextInput
+                    id={'stringMatch'}
+                    placeholder="match string"
+                    value={this.state.addMatch.uri.stringMatch}
+                    onChange={value => this.onAddUriMatchString(value)}
+                  />
+                </FormGroup>
+              </GridItem>
+              <GridItem span={12}>
+                <Table
+                  aria-label="HTTP Match Requests"
+                  cells={headerCells}
+                  rows={this.rows()}
+                  // @ts-ignore
+                  actionResolver={this.actionResolver}
                 >
-                  Add Match Rule
-                </Button>
-              </span>
-            </CardHeader>
-            <CardBody>
-              <Grid gutter="md">
-                <GridItem span={6}>
-                  <FormGroup fieldId="matchSelect" label="URI Match criterion">
-                    <FormSelect id="match" value={this.state.addMatch.uri.match} onChange={this.onAddUriMatch}>
-                      {MatchOptions.map((mt, index) => (
-                        <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
-                      ))}
-                    </FormSelect>
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={6}>
-                  <FormGroup fieldId="stringMatch" label="Match String">
-                    <TextInput
-                      id={'stringMatch'}
-                      placeholder="match string"
-                      value={this.state.addMatch.uri.stringMatch}
-                      onChange={value => this.onAddUriMatchString(value)}
-                    />
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={12}>
-                  <Table
-                    aria-label="HTTP Match Requests"
-                    cells={headerCells}
-                    rows={this.rows()}
-                    // @ts-ignore
-                    actionResolver={this.actionResolver}
-                  >
-                    <TableHeader />
-                    <TableBody />
-                  </Table>
-                </GridItem>
-              </Grid>
-            </CardBody>
-          </Card>
-        </>
-      );
+                  <TableHeader />
+                  <TableBody />
+                </Table>
+              </GridItem>
+            </Grid>
+          </CardBody>
+        </Card>
+      </>
+    );
+  };
+
+  render() {
+    const matches = this.props.matches.map((match, i) => (
+      <>
+        <Card style={{ backgroundColor: i % 2 === 0 ? PfColors.GrayBackground : PfColors.White }}>
+          <CardHeader>
+            HTTP Match Request {i + 1}
+            <span style={{ float: 'right', paddingRight: '5px' }}>
+              <Button variant={ButtonVariant.secondary} onClick={() => this.props.onRemove('Match', i)}>
+                Remove
+              </Button>
+            </span>
+          </CardHeader>
+          <CardBody>
+            <Grid gutter="md">
+              <GridItem span={6}>
+                <FormGroup fieldId="matchSelect" label="URI Match criterion">
+                  <FormSelect id="match" value={match.uri.match} isDisabled>
+                    {MatchOptions.map((mt, index) => (
+                      <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              </GridItem>
+              <GridItem span={6}>
+                <FormGroup fieldId="stringMatch" label="URI Match">
+                  <TextInput isDisabled id={'stringMatch'} placeholder="match string" value={match.uri.stringMatch} />
+                </FormGroup>
+              </GridItem>
+              <GridItem span={12}>
+                <Table aria-label="HTTP Match Requests" cells={headerCells} rows={this.matchrows(match)}>
+                  <TableHeader />
+                  <TableBody />
+                </Table>
+              </GridItem>
+            </Grid>
+          </CardBody>
+        </Card>
+        <Divider />
+      </>
+    ));
+
+    return (
+      <div>
+        {matches}
+
+        <Modal
+          width={'50%'}
+          title={'Create New Match Rule'}
+          isOpen={this.state.showAddMatchWizard}
+          onClose={() => this.onShowAddMatchWizard(false)}
+          onKeyPress={e => {
+            if (e.key === 'Enter' && this.isAddMatchValid()) {
+              this.onAddMatchRules();
+            }
+          }}
+          actions={[
+            <Button
+              variant={ButtonVariant.secondary}
+              isDisabled={!this.isAddMatchValid()}
+              onClick={() => this.onAddMatchRules()}
+            >
+              Create Rule
+            </Button>
+          ]}
+        >
+          <>
+            <Card>
+              <CardBody>
+                <Grid gutter="md">
+                  <GridItem span={6}>
+                    <FormGroup fieldId="matchSelect" label="URI Match criterion">
+                      <FormSelect id="match" value={this.state.addMatch.uri.match} onChange={this.onAddUriMatch}>
+                        {MatchOptions.map((mt, index) => (
+                          <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
+                        ))}
+                      </FormSelect>
+                    </FormGroup>
+                  </GridItem>
+                  <GridItem span={6}>
+                    <FormGroup fieldId="stringMatch" label="Match String">
+                      <TextInput
+                        id={'stringMatch'}
+                        placeholder="match string"
+                        value={this.state.addMatch.uri.stringMatch}
+                        onChange={value => this.onAddUriMatchString(value)}
+                      />
+                    </FormGroup>
+                  </GridItem>
+                  <GridItem span={12}>
+                    <Table
+                      aria-label="HTTP Match Requests"
+                      cells={headerCells}
+                      rows={this.rows()}
+                      // @ts-ignore
+                      actionResolver={this.actionResolver}
+                    >
+                      <TableHeader />
+                      <TableBody />
+                    </Table>
+                  </GridItem>
+                </Grid>
+              </CardBody>
+            </Card>
+          </>
+        </Modal>
+
+        <Button variant={ButtonVariant.secondary} onClick={() => this.onShowAddMatchWizard(true)}>
+          Add Match Rule
+        </Button>
+      </div>
+    );
   }
 }
 
