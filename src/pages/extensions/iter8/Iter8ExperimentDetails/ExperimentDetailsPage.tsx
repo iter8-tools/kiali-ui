@@ -13,7 +13,7 @@ import {
   Iter8Info,
   MetricProgressInfo
 } from '../../../../types/Iter8';
-import Iter8Dropdown, { ManualOverride } from './Iter8Dropdown';
+import Iter8Dropdown from './Iter8Dropdown';
 import history from '../../../../app/History';
 import { connect } from 'react-redux';
 
@@ -24,6 +24,7 @@ import { KialiAppState } from '../../../../store/Store';
 import { durationSelector } from '../../../../store/Selectors';
 import { TimeInMilliseconds } from '../../../../types/Common';
 import RefreshContainer from '../../../../components/Refresh/Refresh';
+import { WorkloadWeight } from '../../../../components/IstioWizards/TrafficShifting';
 
 interface ExpeerimentId {
   namespace: string;
@@ -43,7 +44,7 @@ interface State {
   baseline: string;
   actionTaken: string;
   resetActionFlag: boolean;
-  manualOverride: ManualOverride;
+  manualOverride: WorkloadWeight[];
   lastRefreshAt: TimeInMilliseconds;
 }
 
@@ -82,27 +83,31 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
       baseline: baseline,
       actionTaken: '',
       resetActionFlag: false,
-      manualOverride: {
-        TrafficSplit: trafficSplit,
-        totalTrafficSplitPercentage: 0
-      },
+      manualOverride: [],
       lastRefreshAt: Date.now()
     };
   }
 
-  initTrafficSplit = (experiment): ManualOverride => {
-    if (this.state.manualOverride.TrafficSplit.size !== 0) {
+  initTrafficSplit = (experiment): WorkloadWeight[] => {
+    if (this.state.manualOverride.length !== 0) {
       return this.state.manualOverride;
     } else {
-      let trafficSplit = new Map<string, number>();
-      trafficSplit.set(experiment.experimentItem.baseline.name, 0);
-      experiment.experimentItem.candidates.forEach(c => {
-        trafficSplit.set(c.name, 0);
+      let trafficSplit: WorkloadWeight[] = [];
+      trafficSplit.push({
+        name: experiment.experimentItem.baseline.name,
+        weight: 0,
+        maxWeight: 100,
+        locked: false
       });
-      return {
-        TrafficSplit: trafficSplit,
-        totalTrafficSplitPercentage: 0
-      };
+      experiment.experimentItem.candidates.forEach(c => {
+        trafficSplit.push({
+          name: c.name,
+          weight: 0,
+          maxWeight: 100,
+          locked: false
+        });
+      });
+      return trafficSplit;
     }
   };
 
@@ -181,12 +186,10 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
       });
   };
 
-  doTrafficSplit = (manualOverride: ManualOverride) => {
-    this.setState(prevState => {
-      prevState.manualOverride.TrafficSplit = manualOverride.TrafficSplit;
-      prevState.manualOverride.totalTrafficSplitPercentage = manualOverride.totalTrafficSplitPercentage;
+  doTrafficSplit = (manualOverride: WorkloadWeight[]) => {
+    this.setState(_ => {
       return {
-        manualOverride: prevState.manualOverride
+        manualOverride: manualOverride
       };
     });
   };
@@ -198,7 +201,12 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
       trafficSplit: []
     };
     if (requestAction === 'terminate') {
-      action.trafficSplit = Array.from(this.state.manualOverride.TrafficSplit.entries());
+      let newrafficSplit = new Map<string, string>();
+
+      this.state.manualOverride.forEach((w, _) => {
+        newrafficSplit.set(w.name, String(w.weight));
+      });
+      action.trafficSplit = Array.from(newrafficSplit);
     }
     this.setState({ actionTaken: requestAction });
     API.updateExperiment(this.props.match.params.namespace, this.props.match.params.name, JSON.stringify(action))

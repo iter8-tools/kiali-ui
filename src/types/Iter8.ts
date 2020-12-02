@@ -241,7 +241,7 @@ export interface URIMatch {
 
 export interface ExperimentAction {
   action: string;
-  trafficSplit: [string, number][];
+  trafficSplit: [string, string][];
 }
 
 export interface ExperimentSpec {

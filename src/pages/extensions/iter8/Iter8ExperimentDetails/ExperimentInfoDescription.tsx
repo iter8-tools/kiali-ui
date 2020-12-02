@@ -216,7 +216,7 @@ class ExperimentInfoDescription extends React.Component<ExperimentInfoDescriptio
           <Title style={{ float: 'left' }} headingLevel="h3" size="2xl">
             <Badge className={'virtualitem_badge_definition'}>{this.props.experimentDetails.experimentType}</Badge>
             &nbsp;&nbsp;
-            {this.props.experimentDetails !== undefined ? this.props.experimentDetails.experimentItem.name : 'N/A'}
+            {this.props.experimentDetails.experimentItem.name}
           </Title>
         </CardHeader>
       </CardHead>
@@ -251,7 +251,12 @@ class ExperimentInfoDescription extends React.Component<ExperimentInfoDescriptio
         ? this.props.experimentDetails.networking.hosts.length > 0
         : false
       : false;
-
+    let winnerInfo = '';
+    let additionInfo = '';
+    if (this.props.experimentDetails.experimentItem.status.indexOf('Abort') > 0) {
+      winnerInfo = ' (Tentative)';
+      additionInfo = ' at the time of Termination(Abort).';
+    }
     return (
       <>
         <RenderComponentScroll>
@@ -361,14 +366,19 @@ class ExperimentInfoDescription extends React.Component<ExperimentInfoDescriptio
                                 <StackItem>
                                   {this.props.experimentDetails.experimentItem.winner.winning_version_found ? (
                                     <>
-                                      <Text component={TextVariants.h3}> Winner Found:</Text>
+                                      <Text component={TextVariants.h3}> Winner Found: {winnerInfo}</Text>
                                       {this.props.experimentDetails.experimentItem.winner.name}
                                       <Tooltip
                                         key={'winnerTooltip'}
                                         aria-label={'Winner Tooltip'}
                                         position={PopoverPosition.auto}
                                         className={'health_indicator'}
-                                        content={<>{'Winning version identified by iter8 analytics'}</>}
+                                        content={
+                                          <>
+                                            {'Winning version identified by iter8 analytics'}
+                                            {additionInfo}
+                                          </>
+                                        }
                                       >
                                         <KialiIcon.Info className={infoStyle} />
                                       </Tooltip>
@@ -455,9 +465,7 @@ class ExperimentInfoDescription extends React.Component<ExperimentInfoDescriptio
               <Tabs isFilled={false} activeKey={0}>
                 <Tab title={'Traffic Control'} eventKey={0} style={{ backgroundColor: PfColors.White }}>
                   <ErrorBoundaryWithMessage message={'Something went wrong'}>
-                    <TrafficControlInfo
-                      trafficControl={this.props.experimentDetails.trafficControl}
-                    ></TrafficControlInfo>
+                    <TrafficControlInfo trafficControl={this.props.experimentDetails.trafficControl} />
                   </ErrorBoundaryWithMessage>
                 </Tab>
               </Tabs>

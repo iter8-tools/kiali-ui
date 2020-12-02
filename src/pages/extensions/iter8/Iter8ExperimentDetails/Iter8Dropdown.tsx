@@ -1,20 +1,19 @@
 import * as React from 'react';
 import {
-  Alert,
   Button,
   Dropdown,
   DropdownItem,
   DropdownPosition,
   DropdownToggle,
   Form,
-  FormGroup,
   Modal,
   Text,
   TextVariants,
   Tooltip,
   TooltipPosition
 } from '@patternfly/react-core';
-import { TextInputBase as TextInput } from '@patternfly/react-core/dist/js/components/TextInput/TextInput';
+import { WorkloadOverview } from '../../../../types/ServiceInfo';
+import TrafficShifting, { WorkloadWeight } from '../../../../components/IstioWizards/TrafficShifting';
 
 export type ManualOverride = {
   TrafficSplit: Map<string, number>;
@@ -23,7 +22,7 @@ export type ManualOverride = {
 
 type Props = {
   experimentName: string;
-  manualOverride: ManualOverride;
+  manualOverride: WorkloadWeight[];
   canDelete: boolean;
   startTime: string;
   endTime: string;
@@ -32,7 +31,7 @@ type Props = {
   onPause: () => void;
   onResume: () => void;
   onTerminate: () => void;
-  doTrafficSplit: (manualOverride: ManualOverride) => void;
+  doTrafficSplit: (manualOverride: WorkloadWeight[]) => void;
 };
 
 type State = {
@@ -41,8 +40,9 @@ type State = {
   showResumeConfirmModal: boolean;
   showTerminateConfirmModal: boolean;
   dropdownOpen: boolean;
-  manualOverride: ManualOverride;
-  candidates: string[];
+  // manualOverride: ManualOverride;
+  workloadWeights: WorkloadWeight[];
+  // candidates: string[];
   warning: string;
 };
 
@@ -51,10 +51,6 @@ const ITER8_ACTIONS = ['Pause', 'Resume', 'Terminate'];
 class Iter8Dropdown extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    let candidates: string[] = [];
-    this.props.manualOverride.TrafficSplit.forEach((_, key: string) => {
-      candidates.push(key);
-    });
 
     this.state = {
       dropdownOpen: false,
@@ -62,8 +58,7 @@ class Iter8Dropdown extends React.Component<Props, State> {
       showPauseConfirmModal: false,
       showResumeConfirmModal: false,
       showTerminateConfirmModal: false,
-      manualOverride: this.props.manualOverride,
-      candidates: candidates,
+      workloadWeights: [],
       warning: ''
     };
   }
@@ -93,7 +88,7 @@ class Iter8Dropdown extends React.Component<Props, State> {
         break;
       case 'Terminate':
         if (reset) {
-          this.setState({ warning: '', manualOverride: { TrafficSplit: new Map(), totalTrafficSplitPercentage: 0 } });
+          this.setState({ warning: '', workloadWeights: this.props.manualOverride });
         }
         this.setState({ showTerminateConfirmModal: action });
         break;
@@ -113,69 +108,46 @@ class Iter8Dropdown extends React.Component<Props, State> {
         this.props.onResume();
         break;
       case 'Terminate':
-        if (this.state.manualOverride.totalTrafficSplitPercentage === 100) {
-          this.setState({ warning: '' });
-          this.props.onTerminate();
-        } else {
-          this.setState({
-            showTerminateConfirmModal: true,
-            warning: 'Total Traffic Split Percentage must be equal to 100%'
-          });
-        }
+        this.setState({ warning: '' });
+        this.props.doTrafficSplit(this.state.workloadWeights);
+        this.props.onTerminate();
         break;
     }
   };
 
-  setTrafficSplit(val, name) {
-    this.setState(
-      prevState => {
-        let total = 0;
-        prevState.manualOverride.TrafficSplit.set(name, val);
-        for (let entry of Array.from(prevState.manualOverride.TrafficSplit.entries())) {
-          total = total + Number(entry[1]);
-        }
-        prevState.manualOverride.totalTrafficSplitPercentage = total;
-        if (total === 100) {
-          return {
-            manualOverride: prevState.manualOverride,
-            warning: ''
-          };
-        } else {
-          return {
-            manualOverride: prevState.manualOverride,
-            warning: prevState.warning
-          };
-        }
-      },
-      () => this.props.doTrafficSplit(this.state.manualOverride)
-    );
-  }
+  onSelectWeights = (_valid: boolean, workloads: WorkloadWeight[]) => {
+    this.setState({
+      workloadWeights: workloads
+    });
+  };
+
+  checkTotalWeight = (): boolean => {
+    if (this.state.showTerminateConfirmModal) {
+      return this.state.workloadWeights.map(w => w.weight).reduce((a, b) => a + b, 0) === 100;
+    }
+    return true;
+  };
 
   trafficSplitRules = () => {
+    const thisWorkloads: WorkloadOverview[] = [];
+    this.props.manualOverride.forEach(w => {
+      thisWorkloads.push({
+        name: w.name,
+        type: 'Workload',
+        istioSidecar: false,
+        labels: {},
+        resourceVersion: 'v',
+        createdAt: ''
+      });
+    });
+
     return (
       <Form isHorizontal={true}>
-        {this.state.candidates.map(c => {
-          return (
-            <>
-              <FormGroup
-                fieldId={c}
-                label={c}
-                isRequired={true}
-                helperTextInvalid="Total Percentage must be equal to 100%"
-                isValid={this.state.manualOverride.totalTrafficSplitPercentage === 100}
-              >
-                <TextInput
-                  id={c}
-                  type="number"
-                  value={this.state.manualOverride[c]}
-                  placeholder="Traffic Split Percentage"
-                  onChange={value => this.setTrafficSplit(value, c)}
-                />
-              </FormGroup>
-            </>
-          );
-        })}
-        {this.state.warning !== '' ? <Alert variant="warning" isInline title={this.state.warning} /> : <></>}
+        <TrafficShifting
+          workloads={thisWorkloads}
+          initWeights={this.props.manualOverride}
+          onChange={this.onSelectWeights}
+        />
       </Form>
     );
   };
@@ -192,7 +164,12 @@ class Iter8Dropdown extends React.Component<Props, State> {
           <Button key="cancel" variant="secondary" onClick={() => this.actionConfirmModal(action, false, true)}>
             Cancel
           </Button>,
-          <Button key="confirm" variant="danger" onClick={() => this.onAction(action)}>
+          <Button
+            key="confirm"
+            variant="danger"
+            isDisabled={!this.checkTotalWeight()}
+            onClick={() => this.onAction(action)}
+          >
             {action}
           </Button>
         ]}
