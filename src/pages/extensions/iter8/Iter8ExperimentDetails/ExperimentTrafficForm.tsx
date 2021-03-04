@@ -1,21 +1,40 @@
-import { cellWidth, ICell, IRow, Table, TableBody, TableHeader, wrappable } from '@patternfly/react-table';
+import {
+  cellWidth,
+  compoundExpand,
+  ICell,
+  IRow,
+  Table,
+  TableBody,
+  TableHeader,
+  TableVariant,
+  wrappable
+} from '@patternfly/react-table';
 import { Criteria, HeaderMatch, Host, HttpMatch, initCriteria } from '../../../../types/Iter8';
 import * as React from 'react';
 import {
   Button,
+  ButtonVariant,
   Card,
-  CardHeader,
   CardBody,
-  Divider,
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateVariant,
+  Flex,
+  FlexItem,
+  FlexModifiers,
   FormGroup,
   FormSelect,
   FormSelectOption,
   Grid,
   GridItem,
+  Popover,
+  Modal,
   TextInput,
-  ButtonVariant
+  Title
 } from '@patternfly/react-core';
-import { PfColors } from '../../../../components/Pf/PfColors';
+import CodeBranchIcon from '@patternfly/react-icons/dist/js/icons/code-branch-icon';
+import { InfoAltIcon } from '@patternfly/react-icons';
+import { style } from 'typestyle';
 
 const MatchOptions = [
   { value: '', label: '--- select ---' },
@@ -46,6 +65,19 @@ const headerCells: ICell[] = [
   }
 ];
 
+const containerPadding = style({ padding: '20px' });
+
+const matchWizardTableColumns = [
+  'URL Match Policy',
+  'Match String',
+  {
+    title: 'Headers',
+    cellTransforms: [compoundExpand]
+  },
+  '' // Delete button
+];
+const matchWizardTableChildColumns = ['Header Key', 'Match Policy', 'Match String'];
+
 type Props = {
   matches: HttpMatch[];
   onRemove: (type: string, index: number) => void;
@@ -53,13 +85,16 @@ type Props = {
 };
 
 export type TrafficState = {
+  showAddMatchWizard: boolean;
   addMatch: HttpMatch;
   addHeader: HeaderMatch;
+  rows: any[];
   focusElementName: string;
   validName: boolean;
 };
 
 export const initMatch = (): TrafficState => ({
+  showAddMatchWizard: false,
   addMatch: {
     uri: {
       match: '',
@@ -72,6 +107,7 @@ export const initMatch = (): TrafficState => ({
     match: '',
     stringMatch: ''
   },
+  rows: [],
   focusElementName: 'Unknown',
   validName: false
 });
@@ -106,20 +142,6 @@ class ExperimentTrafficForm extends React.Component<Props, TrafficState> {
       }
     }
   }
-
-  onAddMatch = (value: string, _) => {
-    this.setState(prevState => ({
-      addMatch: {
-        uri: {
-          match: value.trim(),
-          stringMatch: prevState.addMatch.uri.stringMatch
-        },
-        headers: prevState.addMatch.headers
-      },
-      focusElementName: 'Unknow',
-      validName: true
-    }));
-  };
 
   onAddUriMatch = (value: string) => {
     this.setState(prevState => ({
@@ -201,27 +223,125 @@ class ExperimentTrafficForm extends React.Component<Props, TrafficState> {
     });
   };
 
-  onAddMatchRules = () => {
-    this.props.onAdd(initCriteria(), { name: '', gateway: '' }, this.state.addMatch);
+  onShowAddMatchWizard = (show: boolean) => {
     this.setState({
-      addMatch: {
-        uri: {
-          match: '',
-          stringMatch: ''
-        },
-        headers: []
-      },
-      addHeader: {
-        key: '',
-        match: '',
-        stringMatch: ''
-      },
-      focusElementName: 'Unknown',
-      validName: false
+      showAddMatchWizard: show
     });
   };
 
-  rows = (): IRow[] => {
+  isAddMatchValid = () => {
+    return !(
+      (this.state.addMatch.uri.match.length === 0 || this.state.addMatch.uri.stringMatch.length === 0) &&
+      this.state.addMatch.headers.length === 0
+    );
+  };
+
+  onAddMatchRules = () => {
+    this.props.onAdd(initCriteria(), { name: '', gateway: '' }, this.state.addMatch);
+    this.onShowAddMatchWizard(false);
+
+    this.setState(() => {
+      return {
+        addMatch: {
+          uri: {
+            match: '',
+            stringMatch: ''
+          },
+          headers: []
+        },
+        addHeader: {
+          key: '',
+          match: '',
+          stringMatch: ''
+        },
+        rows: this.getRows(),
+        focusElementName: 'Unknown',
+        validName: false
+      };
+    });
+  };
+
+  onRemoveMatchRules = (index: number) => {
+    this.props.matches.splice(index, 1);
+
+    this.setState(() => {
+      return {
+        rows: this.getRows()
+      };
+    });
+  };
+
+  getRows = (): IRow[] => {
+    let rows: IRow[] = [];
+
+    this.props.matches.forEach((matchRule, index) => {
+      const parentCount = index * 2;
+
+      const childRows: IRow[] = matchRule.headers.map(h => {
+        return {
+          cells: [h.key, h.match, h.stringMatch]
+        };
+      });
+
+      rows.push({
+        cells: [
+          matchRule.uri.match,
+          matchRule.uri.stringMatch,
+          {
+            title: (
+              <React.Fragment>
+                <CodeBranchIcon key="icon" /> {matchRule.headers.length}
+              </React.Fragment>
+            ),
+            props: {
+              isOpen: false
+            }
+          },
+          {
+            title: <Button onClick={() => this.onRemoveMatchRules(index)}>Delete</Button>
+          }
+        ]
+      });
+
+      rows.push({
+        parent: parentCount,
+        compoundParent: 2,
+        cells: [
+          {
+            title: (
+              <Table
+                cells={matchWizardTableChildColumns}
+                variant={TableVariant.compact}
+                rows={childRows}
+                className="pf-m-no-border-rows"
+              >
+                <TableHeader />
+                <TableBody />
+              </Table>
+            ),
+            props: {
+              className: 'pf-m-no-padding',
+              colSpan: 3
+            }
+          }
+        ]
+      });
+    });
+
+    return rows;
+  };
+
+  onExpand = (_, rowIndex, colIndex, isOpen) => {
+    const { rows } = this.state;
+
+    rows[rowIndex].cells[colIndex].props.isOpen = !isOpen;
+
+    this.setState({
+      rows
+    });
+  };
+
+  getMatchWizardRows = (): IRow[] => {
     return this.state.addMatch.headers
       .map((header, i) => ({
         key: 'header' + i,
@@ -278,110 +398,135 @@ class ExperimentTrafficForm extends React.Component<Props, TrafficState> {
       ]);
   };
 
-  matchrows(match) {
-    return match.headers.map((header, i) => ({
-      key: 'uri' + i,
-      cells: [<>{header.key}</>, <>{header.match}</>, <>{header.stringMatch}</>, '']
-    }));
-  }
-
   render() {
-    return this.props.matches
-      .map((match, i) => (
-        <>
-          <Card style={{ backgroundColor: i % 2 === 0 ? PfColors.GrayBackground : PfColors.White }}>
-            <CardHeader>
-              HTTP Match Request {i + 1}
-              <span style={{ float: 'right', paddingRight: '5px' }}>
-                <Button variant={ButtonVariant.secondary} onClick={() => this.props.onRemove('Match', i)}>
-                  Remove
-                </Button>
-              </span>
-            </CardHeader>
-            <CardBody>
-              <Grid gutter="md">
-                <GridItem span={6}>
-                  <FormGroup fieldId="matchSelect" label="URI Match criterion">
-                    <FormSelect id="match" value={match.uri.match} isDisabled>
-                      {MatchOptions.map((mt, index) => (
-                        <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
-                      ))}
-                    </FormSelect>
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={6}>
-                  <FormGroup fieldId="stringMatch" label="URI Match">
-                    <TextInput isDisabled id={'stringMatch'} placeholder="match string" value={match.uri.stringMatch} />
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={12}>
-                  <Table aria-label="HTTP Match Requests" cells={headerCells} rows={this.matchrows(match)}>
-                    <TableHeader />
-                    <TableBody />
-                  </Table>
-                </GridItem>
-              </Grid>
-            </CardBody>
-          </Card>
-          <Divider />
-        </>
-      ))
-      .concat(
-        <>
-          <Card>
-            <CardHeader>
-              New HTTP Match Request
-              <span style={{ float: 'right', paddingRight: '5px' }}>
-                <Button
-                  variant={ButtonVariant.secondary}
-                  isDisabled={
-                    (this.state.addMatch.uri.match.length === 0 || this.state.addMatch.uri.stringMatch.length === 0) &&
-                    this.state.addMatch.headers.length === 0
+    const { rows } = this.state;
+
+    return (
+      <div>
+        <Flex breakpointMods={[{ modifier: FlexModifiers.column }]}>
+          <FlexItem>
+            <div className={containerPadding}>
+              <Title headingLevel="h6" size="lg">
+                Match Rules
+                <Popover
+                  position={'right'}
+                  hideOnOutsideClick={true}
+                  maxWidth={'40rem'}
+                  headerContent={<div>Match Rules</div>}
+                  bodyContent={
+                    <div>
+                      <p>
+                        Specifies the portion of traffic that can be routed to candidates during the experiment. Traffic
+                        that does not match this clause will be sent to baseline and never to a candidate during an
+                        experiment. By default, if this field is left unspecified, all traffic is used for an
+                        experiment.
+                      </p>
+                      <p>
+                        Currently, only HTTP traffic is controlled. For each match rule, please specify one or both of
+                        <b>uri</b> and one or multiple <b>headers</b>. Use <b>Add this Header</b> to add the header to
+                        the match rule, and use <b>Add Match Rule</b> to add the match rule.
+                      </p>
+                    </div>
                   }
-                  onClick={() => this.onAddMatchRules()}
                 >
-                  Add Match Rule
-                </Button>
-              </span>
-            </CardHeader>
-            <CardBody>
-              <Grid gutter="md">
-                <GridItem span={6}>
-                  <FormGroup fieldId="matchSelect" label="URI Match criterion">
-                    <FormSelect id="match" value={this.state.addMatch.uri.match} onChange={this.onAddUriMatch}>
-                      {MatchOptions.map((mt, index) => (
-                        <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
-                      ))}
-                    </FormSelect>
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={6}>
-                  <FormGroup fieldId="stringMatch" label="Match String">
-                    <TextInput
-                      id={'stringMatch'}
-                      placeholder="match string"
-                      value={this.state.addMatch.uri.stringMatch}
-                      onChange={value => this.onAddUriMatchString(value)}
-                    />
-                  </FormGroup>
-                </GridItem>
-                <GridItem span={12}>
-                  <Table
-                    aria-label="HTTP Match Requests"
-                    cells={headerCells}
-                    rows={this.rows()}
-                    // @ts-ignore
-                    actionResolver={this.actionResolver}
-                  >
-                    <TableHeader />
-                    <TableBody />
-                  </Table>
-                </GridItem>
-              </Grid>
-            </CardBody>
-          </Card>
-        </>
-      );
+                  <Button variant="link">
+                    <InfoAltIcon noVerticalAlign />
+                  </Button>
+                </Popover>
+              </Title>
+
+              <Table
+                aria-label="Compound expandable table"
+                onExpand={this.onExpand}
+                rows={rows}
+                cells={matchWizardTableColumns}
+              >
+                <TableHeader />
+                {rows.length > 0 ? (
+                  <TableBody />
+                ) : (
+                  <tr>
+                    <td colSpan={matchWizardTableColumns.length}>
+                      <EmptyState variant={EmptyStateVariant.full}>
+                        <Title headingLevel="h5" size="lg">
+                          No Match Rule found
+                        </Title>
+                        <EmptyStateBody>No Match Rules is defined in Experiment</EmptyStateBody>
+                      </EmptyState>
+                    </td>
+                  </tr>
+                )}
+              </Table>
+            </div>
+          </FlexItem>
+        </Flex>
+
+        <Modal
+          width={'50%'}
+          title={'Create New Match Rule'}
+          isOpen={this.state.showAddMatchWizard}
+          onClose={() => this.onShowAddMatchWizard(false)}
+          onKeyPress={e => {
+            if (e.key === 'Enter' && this.isAddMatchValid()) {
+              this.onAddMatchRules();
+            }
+          }}
+          actions={[
+            <Button
+              variant={ButtonVariant.secondary}
+              isDisabled={!this.isAddMatchValid()}
+              onClick={() => this.onAddMatchRules()}
+            >
+              Create Rule
+            </Button>
+          ]}
+        >
+          <>
+            <Card>
+              <CardBody>
+                <Grid gutter="md">
+                  <GridItem span={6}>
+                    <FormGroup fieldId="matchSelect" label="URI Match criterion">
+                      <FormSelect id="match" value={this.state.addMatch.uri.match} onChange={this.onAddUriMatch}>
+                        {MatchOptions.map((mt, index) => (
+                          <FormSelectOption label={mt.label} key={'gateway' + index} value={mt.value} />
+                        ))}
+                      </FormSelect>
+                    </FormGroup>
+                  </GridItem>
+                  <GridItem span={6}>
+                    <FormGroup fieldId="stringMatch" label="Match String">
+                      <TextInput
+                        id={'stringMatch'}
+                        placeholder="match string"
+                        value={this.state.addMatch.uri.stringMatch}
+                        onChange={value => this.onAddUriMatchString(value)}
+                      />
+                    </FormGroup>
+                  </GridItem>
+                  <GridItem span={12}>
+                    <Table
+                      aria-label="HTTP Match Requests"
+                      cells={headerCells}
+                      rows={this.getMatchWizardRows()}
+                      // @ts-ignore
+                      actionResolver={this.actionResolver}
+                    >
+                      <TableHeader />
+                      <TableBody />
+                    </Table>
+                  </GridItem>
+                </Grid>
+              </CardBody>
+            </Card>
+          </>
+        </Modal>
+
+        <Button variant={ButtonVariant.secondary} onClick={() => this.onShowAddMatchWizard(true)}>
+          Add Match Rule
+        </Button>
+      </div>
+    );
   }
 }
 

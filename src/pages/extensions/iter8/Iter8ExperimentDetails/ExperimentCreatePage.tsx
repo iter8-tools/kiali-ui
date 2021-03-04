@@ -15,9 +15,7 @@ import {
   GridItem,
   Popover,
   Switch,
-  Text,
-  TextInputBase as TextInput,
-  TextVariants
+  TextInputBase as TextInput
 } from '@patternfly/react-core';
 import history from '../../../../app/History';
 import { RenderContent } from '../../../../components/Nav/Page';
@@ -818,35 +816,6 @@ class ExperimentCreatePage extends React.Component<Props, State> {
                 onChange={value => this.changeExperimentNumber('maxIncrement', Number(value))}
               />
             </FormGroup>
-          </GridItem>
-          <GridItem span={12}>
-            <Text component={TextVariants.a}>
-              Number of Match Rules : {this.state.experiment.trafficControl.match.http.length}
-              <Popover
-                position={'right'}
-                hideOnOutsideClick={true}
-                maxWidth={'40rem'}
-                headerContent={<div>Match Rules</div>}
-                bodyContent={
-                  <div>
-                    <p>
-                      Specifies the portion of traffic which can be routed to candidates during the experiment. Traffic
-                      that does not match this clause will be sent to baseline and never to a candidate during an
-                      experiment. By default, if this field is left unspecified, all traffic is used for an experiment.
-                    </p>
-                    <p>
-                      Currently, only http trafic is controlled. For each match rule, please specify one or both of{' '}
-                      <b>uri</b> and one or multiple <b>headers</b>. Use <b>Add this Header</b> to add header to the
-                      rule, and use <b>Add Match Rule</b> to add match rule.
-                    </p>
-                  </div>
-                }
-              >
-                <Button variant="link">
-                  <InfoAltIcon noVerticalAlign />
-                </Button>
-              </Popover>
-            </Text>
           </GridItem>
           <GridItem span={12}>
             <ExperimentTrafficForm
