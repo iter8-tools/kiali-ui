@@ -23,6 +23,7 @@ import { IstioConfigList } from '../types/IstioConfigList';
 import { Pod, PodLogs, ValidationStatus, EnvoyProxyDump } from '../types/IstioObjects';
 import { ComponentStatus } from '../types/IstioStatus';
 import { Iter8ExpDetailsInfo, Iter8Experiment, Iter8Info, ExperimentSpec } from '../types/Iter8';
+import { Iter8v2ExpDetailsInfo, Iter8v2Experiment, Iter8v2Info } from '../types/Iter8v2';
 import { JaegerInfo, JaegerResponse, JaegerSingleResponse } from '../types/JaegerInfo';
 import { MeshClusters } from '../types/Mesh';
 import { DashboardQuery, IstioMetricsOptions, MetricsStatsQuery } from '../types/MetricsOptions';
@@ -586,6 +587,10 @@ export const getIter8Info = () => {
   return newRequest<Iter8Info>(HTTP_VERBS.GET, urls.iter8, {}, {});
 };
 
+export const getIter8v2Info = () => {
+  return newRequest<Iter8v2Info>(HTTP_VERBS.GET, urls.iter8, {}, {});
+};
+
 export const getIter8Metrics = () => {
   return newRequest<string[]>(HTTP_VERBS.GET, urls.iter8Metrics, {}, {});
 };
@@ -594,12 +599,25 @@ export const getExperiments = (namespaces: string[]) => {
   return newRequest<Iter8Experiment[]>(HTTP_VERBS.GET, urls.iter8Experiments, { namespaces: namespaces.join(',') }, {});
 };
 
+export const getv2Experiments = (namespaces: string[]) => {
+  return newRequest<Iter8v2Experiment[]>(
+    HTTP_VERBS.GET,
+    urls.iter8v2Experiments,
+    { namespaces: namespaces.join(',') },
+    {}
+  );
+};
+
 export const getExperimentsByNamespace = (namespace: string) => {
   return newRequest<Iter8Experiment>(HTTP_VERBS.GET, urls.iter8ExperimentsByNamespace(namespace), {}, {});
 };
 
 export const getExperiment = (namespace: string, name: string) => {
   return newRequest<Iter8ExpDetailsInfo>(HTTP_VERBS.GET, urls.iter8Experiment(namespace, name), {}, {});
+};
+
+export const getv2Experiment = (namespace: string, name: string) => {
+  return newRequest<Iter8v2ExpDetailsInfo>(HTTP_VERBS.GET, urls.iter8v2Experiment(namespace, name), {}, {});
 };
 
 export const getExperimentYAML = (namespace: string, name: string) => {

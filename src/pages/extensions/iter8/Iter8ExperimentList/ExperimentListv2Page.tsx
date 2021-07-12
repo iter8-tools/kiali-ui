@@ -1,10 +1,11 @@
 import * as React from 'react';
 import * as FilterHelper from '../../../../components/FilterList/FilterHelper';
 import { RenderContent } from '../../../../components/Nav/Page';
-import * as ExpListFilters from './FiltersAndSorts';
+import * as ExpListv2Filters from './FiltersAndSortsv2';
+import * as Iter8v2ExperimentListFilters from './FiltersAndSortsv2';
 import { style } from 'typestyle';
 import * as FilterComponent from '../../../../components/FilterList/FilterComponent';
-import { Iter8Experiment, Iter8Info, Winner } from '../../../../types/Iter8';
+import { Iter8v2Experiment, Iter8v2Info } from '../../../../types/Iter8v2';
 import Namespace from '../../../../types/Namespace';
 import {
   cellWidth,
@@ -19,9 +20,7 @@ import {
 import { PromisesRegistry } from '../../../../utils/CancelablePromises';
 import * as API from '../../../../services/Api';
 import * as AlertUtils from '../../../../utils/AlertUtils';
-import * as Iter8ExperimentListFilters from './FiltersAndSorts';
 import { FilterSelected, StatefulFilters } from '../../../../components/Filters/StatefulFilters';
-import { namespaceEquals } from '../../../../utils/Common';
 import history from '../../../../app/History';
 import {
   Dropdown,
@@ -48,7 +47,9 @@ import { activeNamespacesSelector, durationSelector } from '../../../../store/Se
 import { connect } from 'react-redux';
 import DefaultSecondaryMasthead from '../../../../components/DefaultSecondaryMasthead/DefaultSecondaryMasthead';
 import RefreshContainer from '../../../../components/Refresh/Refresh';
-import { PFBadges, PFBadge } from 'components/Pf/PfBadges';
+import { PFBadge, PFBadges } from 'components/Pf/PfBadges';
+import { namespaceEquals } from '../../../../utils/Common';
+import { DurationInSeconds } from '../../../../types/Common';
 
 // Style constants
 const containerPadding = style({ padding: '20px 20px 20px 20px' });
@@ -64,15 +65,16 @@ const statusIconStyle = style({
   fontSize: '1.0em'
 });
 
-interface Props extends FilterComponent.Props<Iter8Experiment> {
+interface Props extends FilterComponent.Props<Iter8v2Experiment> {
+  duration: DurationInSeconds;
   activeNamespaces: Namespace[];
 }
 
 // State of the component/page
 // It stores the visual state of the components and the experiments fetched from the backend.
-interface State extends FilterComponent.State<Iter8Experiment> {
-  iter8Info: Iter8Info;
-  experimentLists: Iter8Experiment[];
+interface State extends FilterComponent.State<Iter8v2Experiment> {
+  iter8v2Info: Iter8v2Info;
+  experimentLists: Iter8v2Experiment[];
   sortBy: ISortBy;
   dropdownOpen: boolean;
   onFilterChange: boolean;
@@ -92,7 +94,7 @@ const columns = [
     transforms: [sortable]
   },
   {
-    title: 'Phase',
+    title: 'Stage',
     transforms: [sortable, cellWidth(5) as any]
   },
   {
@@ -105,20 +107,21 @@ const columns = [
   }
 ];
 
-class ExperimentListPageComponent extends React.Component<Props, State> {
+class ExperimentListv2PageComponent extends React.Component<Props, State> {
   private promises = new PromisesRegistry();
 
   constructor(props: Props) {
     super(props);
-    const prevCurrentSortField = FilterHelper.currentSortField(ExpListFilters.sortFields);
+    const prevCurrentSortField = FilterHelper.currentSortField(ExpListv2Filters.sortFields);
     const prevIsSortAscending = FilterHelper.isCurrentSortAscending();
     this.state = {
-      iter8Info: {
+      iter8v2Info: {
         enabled: false,
         supportedVersion: false,
         controllerImgVersion: '',
         analyticsImgVersion: '',
-        namespace: 'iter8'
+        namespace: 'iter8',
+        etc3: true
       },
       experimentLists: [],
       sortBy: {},
@@ -131,15 +134,15 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
   }
 
   fetchExperiments = (namespaces: string[]) => {
-    API.getIter8Info()
+    API.getIter8v2Info()
       .then(result => {
-        const iter8Info = result.data;
-        if (iter8Info.enabled) {
-          if (!iter8Info.supportedVersion) {
-            if (iter8Info.analyticsImgVersion !== '' && iter8Info.analyticsImgVersion.startsWith('2')) {
+        const iter8v2Info = result.data;
+        if (iter8v2Info.enabled) {
+          if (!iter8v2Info.supportedVersion) {
+            if (iter8v2Info.analyticsImgVersion !== '' && iter8v2Info.analyticsImgVersion.startsWith('2')) {
               AlertUtils.addError(
                 'Iter8 v' +
-                  iter8Info.analyticsImgVersion +
+                  iter8v2Info.analyticsImgVersion +
                   ' is not supported, please use the supported version (v1.x).'
               );
               return;
@@ -150,12 +153,12 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
             return;
           }
           if (namespaces.length > 0) {
-            API.getExperiments(namespaces)
+            API.getv2Experiments(namespaces)
               .then(result => {
                 this.setState(prevState => {
                   return {
-                    iter8Info: iter8Info,
-                    experimentLists: Iter8ExperimentListFilters.filterBy(result.data, FilterSelected.getSelected()),
+                    iter8v2Info: iter8v2Info,
+                    experimentLists: Iter8v2ExperimentListFilters.filterBy(result.data, FilterSelected.getSelected()),
                     sortBy: prevState.sortBy
                   };
                 });
@@ -167,7 +170,7 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
         } else {
           AlertUtils.addError(
             'Kiali has Iter8 extension enabled but it is not detected in the cluster under namespace ' +
-              iter8Info.namespace
+              iter8v2Info.namespace
           );
         }
       })
@@ -182,13 +185,18 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, _prevState: State, _snapshot: any) {
-    const [paramsSynced] = this.paramsAreSynced(prevProps);
-    if (!paramsSynced) {
+    const prevCurrentSortField = FilterHelper.currentSortField(Iter8v2ExperimentListFilters.sortFields);
+    const prevIsSortAscending = FilterHelper.isCurrentSortAscending();
+    if (
+      !namespaceEquals(this.props.activeNamespaces, prevProps.activeNamespaces) ||
+      this.props.duration !== prevProps.duration ||
+      this.state.currentSortField !== prevCurrentSortField ||
+      this.state.isSortAscending !== prevIsSortAscending
+    ) {
       this.setState({
-        currentSortField: this.props.currentSortField,
-        isSortAscending: this.props.isSortAscending
+        currentSortField: prevCurrentSortField,
+        isSortAscending: prevIsSortAscending
       });
-
       this.updateListItems();
     }
   }
@@ -196,12 +204,6 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
   componentWillUnmount() {
     this.promises.cancelAll();
   }
-
-  paramsAreSynced = (prevProps: Props): [boolean, boolean] => {
-    const activeNamespacesCompare = namespaceEquals(prevProps.activeNamespaces, this.props.activeNamespaces);
-    const paramsSynced = activeNamespacesCompare;
-    return [paramsSynced, activeNamespacesCompare];
-  };
 
   // Helper used for Table to sort handlers based on index column == field
   onSort = (_event, index, direction) => {
@@ -212,11 +214,15 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
         case 1:
           return a.namespace < b.namespace ? -1 : a.namespace > b.namespace ? 1 : 0;
         case 2:
-          return a.phase < b.phase ? -1 : a.phase > b.phase ? 1 : 0;
+          return a.stage < b.stage ? -1 : a.stage > b.stage ? 1 : 0;
         case 3:
-          return a.status < b.status ? -1 : a.status > b.status ? 1 : 0;
+          return a.stage < b.stage ? -1 : a.stage > b.stage ? 1 : 0;
         case 4:
-          return a.baseline < b.baseline ? -1 : a.baseline > b.baseline ? 1 : 0;
+          return a.versionInfo.baseline.name < b.versionInfo.baseline.name
+            ? -1
+            : a.versionInfo.baseline.name > b.versionInfo.baseline.name
+            ? 1
+            : 0;
       }
       return 0;
     });
@@ -261,14 +267,14 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
         dropdownItems={[
           <DropdownItem
             key="createExperiment"
-            isDisabled={!this.state.iter8Info.enabled}
+            isDisabled={!this.state.iter8v2Info.enabled}
             onClick={() => this.goNewExperimentPage()}
           >
             Create New Experiment
           </DropdownItem>,
           <DropdownItem
             key="createExperimentFromFile"
-            isDisabled={!this.state.iter8Info.enabled}
+            isDisabled={!this.state.iter8v2Info.enabled}
             onClick={() => this.goNewExperimentFromFile()}
           >
             Create New Experiment from YAML
@@ -286,72 +292,79 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
   toolbar = () => {
     return (
       <StatefulFilters
-        initialFilters={Iter8ExperimentListFilters.availableFilters}
+        initialFilters={Iter8v2ExperimentListFilters.availableFilters}
         onFilterChange={this.onFilterChange}
       />
     );
   };
 
   getStatusTooltip = (
-    phase: string,
-    status: string,
+    stage: string,
     winnerFound: boolean,
     winnerName: string,
-    baselineName: string
+    baselineName: string,
+    messages: string
   ) => {
-    let statusValue = 'Status: In Progress';
-    let retStatus = status;
-    if (status.length > 0) {
-      const values = status.split(':');
-      if (values.length > 1) {
-        retStatus = values.slice(1)[0];
-      }
-      if (status.includes('Failed')) {
-        statusValue = 'Status: Failed';
-      } else if (status.includes('Completed')) {
-        statusValue = 'Status: Completed';
-        if (winnerName === baselineName) {
-          retStatus = 'Traffic to Baseline';
-        }
-      }
+    // let statusValue = 'Status: In Progress';
+    // let retStatus = status;
+    // if (stage.length > 0) {
+    // const values = status.split(':');
+    // if (values.length > 1) {
+    //   retStatus = values.slice(1)[0];
+    // }
+    //  if (status.includes('Failed')) {
+    //    statusValue = 'Status: Failed';
+    // } else if (status.includes('Completed')) {
+    //   statusValue = 'Status: Completed';
+    //  if (winnerName === baselineName) {
+    //   retStatus = 'Traffic to Baseline';
+    // }
+    // }
+    // }
+    let retStatus = '';
+    if (winnerName === baselineName || winnerName === '') {
+      retStatus = 'Traffic to Baseline';
+    } else {
+      retStatus = 'Traffic to ' + winnerName;
     }
     return (
       <TextContent style={{ color: PFColors.White }}>
         <Text>
-          <h2>Phase: </h2> {phase}
+          <h2>Stage: </h2> {stage}
         </Text>
         <Text>
-          <h2>{statusValue}</h2> {retStatus}
+          <h2>Message: </h2> {messages}
         </Text>
         <Text>
           <h2>Winner Found: {winnerFound ? winnerName : 'False'}</h2>
-          <Text component={TextVariants.p}>(Winning version as identified by iter8 analytics)</Text>
+          <Text component={TextVariants.p}>{retStatus} (Winning version as identified by iter8 analytics)</Text>
         </Text>
       </TextContent>
     );
   };
 
-  experimentStatusIcon = (key: string, phase: string, winnerStatus: Winner, status: string, baselineName: string) => {
+  experimentStatusIcon = (
+    key: string,
+    stage: string,
+    winnerfound: boolean,
+    winner: string,
+    baselineName: string,
+    messages: string
+  ) => {
     let className = greenIconStyle;
     let toBaseline = false;
-    let statusString = this.getStatusTooltip(
-      phase,
-      status,
-      winnerStatus.winning_version_found,
-      winnerStatus.name,
-      baselineName
-    );
-    if (status.includes('Abort')) {
-      className = greenIconStyle;
-    } else if (!winnerStatus.winning_version_found) {
-      className = redIconStyle;
-    }
+    let statusString = this.getStatusTooltip(stage, winnerfound, winner, baselineName, messages);
+    //if (status.includes('Abort')) {
+    //  className = greenIconStyle;
+    //} else if (winnerfound) {
+    //  className = redIconStyle;
+    //}
 
-    if (winnerStatus.name === baselineName) {
+    if (winner === baselineName) {
       toBaseline = true;
       className = redIconStyle;
     }
-    switch (phase) {
+    switch (stage) {
       case 'Initializing':
         return (
           <Tooltip
@@ -389,7 +402,7 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
           </Tooltip>
         );
       case 'Completed':
-        if (status.includes('Abort')) {
+        if (stage.includes('Abort')) {
           return (
             <Tooltip
               key={'Completed_' + key}
@@ -468,10 +481,19 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
   rows = (): IRow[] => {
     return this.state.experimentLists.map(h => {
       let candidates: string[] = [];
-      for (const c of h.candidates) {
+      for (const c of h.versionInfo.candidates) {
         candidates.push(c.name);
       }
-
+      let messages = '';
+      if (h.messageInfo.error.trim().length > 0) {
+        messages = messages.concat('Error:' + h.messageInfo.error.trim() + ' ');
+      }
+      if (h.messageInfo.warning.trim().length > 0) {
+        messages = messages.concat('Warning:' + h.messageInfo.warning.trim() + ' ');
+      }
+      if (h.messageInfo.info.trim().length > 0) {
+        messages = messages.concat('Info: ' + h.messageInfo.info.trim() + ' ');
+      }
       return {
         cells: [
           <>
@@ -480,9 +502,11 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
               badge={PFBadges.Iter8}
               position={TooltipPosition.top}
             />
-            <PFBadge badge={{ badge: h.experimentKind }} />
+            <PFBadge badge={{ badge: h.testingPattern, tt: 'Testing Strategies' }} />
+            <PFBadge badge={{ badge: h.deploymentPattern, tt: 'Rollout Strategies' }} />
+            <br />
             <Link
-              to={`/extensions/namespaces/${h.namespace}/iter8/${h.name}?target=${h.targetService}&startTime=${h.startTime}&endTime=${h.endTime}&baseline=${h.baseline.name}&candidates=${candidates}`}
+              to={`/extensions/namespaces/${h.namespace}/iter8/${h.name}?target=${h.target}&startTime=${h.startTime}&endTime=${h.lastUpdateTime}&baseline=${h.versionInfo.baseline.name}&candidates=${candidates}`}
               key={'Experiment_' + h.namespace + '_' + h.namespace}
             >
               {h.name}
@@ -498,20 +522,29 @@ class ExperimentListPageComponent extends React.Component<Props, State> {
           </>,
           <>
             {h.kind === 'Deployment'
-              ? this.redirectLink(h.namespace, h.targetService, 'Service')
-              : this.redirectLink(h.namespace, '', h.kind)}
+              ? this.redirectLink(h.namespace, h.target, 'Service')
+              : this.redirectLink(h.namespace, '', h.testingPattern)}
           </>,
-          <>{this.experimentStatusIcon(h.name + '_' + h.namespace, h.phase, h.winner, h.status, h.baseline.name)}</>,
+          <>
+            {this.experimentStatusIcon(
+              h.name + '_' + h.namespace,
+              h.stage,
+              h.winnerFound,
+              h.winner,
+              h.versionInfo.baseline.name,
+              messages
+            )}
+          </>,
 
           <>
-            {this.redirectLink(h.namespace, h.baseline.name, h.kind)}
-            <br /> {h.baseline.weight}%
+            {this.redirectLink(h.versionInfo.baseline.namespace, h.versionInfo.baseline.name, h.kind)}
+            <br /> {h.versionInfo.baseline.weight}%
           </>,
           <>
-            {h.candidates.map(can => {
+            {h.versionInfo.candidates.map(can => {
               return (
                 <>
-                  {this.redirectLink(h.namespace, can.name, h.kind)}
+                  {this.redirectLink(can.namespace, can.name, h.kind)}
                   &nbsp;{can.weight}% <br />
                 </>
               );
@@ -593,5 +626,5 @@ const mapStateToProps = (state: KialiAppState) => ({
   duration: durationSelector(state)
 });
 
-const ExperimentListPage = connect(mapStateToProps)(ExperimentListPageComponent);
-export default ExperimentListPage;
+const ExperimentListv2Page = connect(mapStateToProps)(ExperimentListv2PageComponent);
+export default ExperimentListv2Page;

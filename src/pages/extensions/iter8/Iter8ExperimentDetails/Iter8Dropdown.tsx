@@ -27,11 +27,6 @@ type Props = {
   startTime: string;
   endTime: string;
   phase: string;
-  onDelete: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onTerminate: () => void;
-  doTrafficSplit: (manualOverride: WorkloadWeight[]) => void;
 };
 
 type State = {
@@ -96,20 +91,6 @@ class Iter8Dropdown extends React.Component<Props, State> {
   onAction = (action: string) => {
     this.actionConfirmModal(action, false, false);
     switch (action) {
-      case 'Delete':
-        this.props.onDelete();
-        break;
-      case 'Pause':
-        this.props.onPause();
-        break;
-      case 'Resume':
-        this.props.onResume();
-        break;
-      case 'Terminate':
-        this.setState({ warning: '' });
-        this.props.doTrafficSplit(this.state.workloadWeights);
-        this.props.onTerminate();
-        break;
     }
   };
 

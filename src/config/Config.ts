@@ -128,8 +128,10 @@ const conf = {
       iter8: `api/iter8`,
       iter8Metrics: 'api/iter8/metrics',
       iter8Experiments: `api/iter8/experiments`,
+      iter8v2Experiments: `api/iter8v2/experiments`,
       iter8ExperimentsByNamespace: (namespace: string) => `api/iter8/namespaces/${namespace}/experiments`,
       iter8Experiment: (namespace: string, name: string) => `api/iter8/namespaces/${namespace}/experiments/${name}`,
+      iter8v2Experiment: (namespace: string, name: string) => `api/iter8v2/namespaces/${namespace}/experiments/${name}`,
       iter8ExperimentYAML: (namespace: string, name: string) =>
         `api/iter8/namespaces/${namespace}/experiments/${name}/yaml`,
       iter8ExperimentUpdate: (namespace: string, name: string) =>

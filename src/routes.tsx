@@ -11,7 +11,7 @@ import GraphPageContainer from './pages/Graph/GraphPage';
 import { Paths } from './config';
 import ServiceDetailsPageContainer from './pages/ServiceDetails/ServiceDetailsPage';
 import IstioConfigNewPageContainer from './pages/IstioConfigNew/IstioConfigNewPage';
-import ExperimentListPage from './pages/extensions/iter8/Iter8ExperimentList/ExperimentListPage';
+import ExperimentListv2Page from './pages/extensions/iter8/Iter8ExperimentList/ExperimentListv2Page';
 import ExperimentCreatePageContainer from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentCreatePage';
 import ExperimentDetailsPage from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentDetailsPage';
 import ExperimentCreateFromFileContainer from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentCreateFromFile';
@@ -165,7 +165,7 @@ const extensionsRoutes: Path[] = [
   },
   {
     path: '/extensions/iter8',
-    component: ExperimentListPage
+    component: ExperimentListv2Page
   }
 ];
 

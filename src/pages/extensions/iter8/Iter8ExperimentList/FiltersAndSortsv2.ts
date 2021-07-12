@@ -1,10 +1,10 @@
 import { ActiveFiltersInfo, FILTER_ACTION_APPEND, FilterType, FilterTypes } from '../../../../types/Filters';
 import { SortField } from '../../../../types/SortFilters';
-import { Iter8Experiment } from '../../../../types/Iter8';
 import { TextInputTypes } from '@patternfly/react-core';
 import { getFilterSelectedValues } from '../../../../components/Filters/CommonFilters';
+import { Iter8v2Experiment } from '../../../../types/Iter8v2';
 
-export const sortFields: SortField<Iter8Experiment>[] = [
+export const sortFields: SortField<Iter8v2Experiment>[] = [
   {
     id: 'namespace',
     title: 'Namespace',
@@ -48,13 +48,13 @@ export const sortFields: SortField<Iter8Experiment>[] = [
   }
 ];
 
-const filterByTargetService = (items: Iter8Experiment[], names: string[]): Iter8Experiment[] => {
+const filterByTargetService = (items: Iter8v2Experiment[], names: string[]): Iter8v2Experiment[] => {
   return items.filter(item => {
     let targetServiceFiltered = true;
     if (names.length > 0) {
       targetServiceFiltered = false;
       for (let i = 0; i < names.length; i++) {
-        if (item.targetService.includes(names[i])) {
+        if (item.target.includes(names[i])) {
           targetServiceFiltered = true;
           break;
         }
@@ -64,13 +64,13 @@ const filterByTargetService = (items: Iter8Experiment[], names: string[]): Iter8
   });
 };
 
-const filterByBaseline = (items: Iter8Experiment[], names: string[]): Iter8Experiment[] => {
+const filterByBaseline = (items: Iter8v2Experiment[], names: string[]): Iter8v2Experiment[] => {
   return items.filter(item => {
     let baselineFiltered = true;
     if (names.length > 0) {
       baselineFiltered = false;
       for (let i = 0; i < names.length; i++) {
-        if (item.baseline.name.includes(names[i])) {
+        if (item.versionInfo.baseline.name.includes(names[i])) {
           baselineFiltered = true;
           break;
         }
@@ -80,13 +80,13 @@ const filterByBaseline = (items: Iter8Experiment[], names: string[]): Iter8Exper
   });
 };
 
-const filterByPhase = (items: Iter8Experiment[], names: string[]): Iter8Experiment[] => {
+const filterByPhase = (items: Iter8v2Experiment[], names: string[]): Iter8v2Experiment[] => {
   return items.filter(item => {
     let phaseFiltered = true;
     if (names.length > 0) {
       phaseFiltered = false;
       for (let i = 0; i < names.length; i++) {
-        if (item.phase.includes(names[i])) {
+        if (item.stage.includes(names[i])) {
           phaseFiltered = true;
           break;
         }
@@ -96,8 +96,8 @@ const filterByPhase = (items: Iter8Experiment[], names: string[]): Iter8Experime
   });
 };
 
-export const filterBy = (iter8Experiment: Iter8Experiment[], filters: ActiveFiltersInfo): Iter8Experiment[] => {
-  let ret = iter8Experiment;
+export const filterBy = (Iter8v2Experiment: Iter8v2Experiment[], filters: ActiveFiltersInfo): Iter8v2Experiment[] => {
+  let ret = Iter8v2Experiment;
 
   const targetServiceSelected = getFilterSelectedValues(targetServiceFilter, filters);
   if (targetServiceSelected.length > 0) {
@@ -172,10 +172,10 @@ export const availableFilters: FilterType[] = [targetServiceFilter, baselineFilt
 /** Sort Method */
 
 export const sortAppsItems = (
-  unsorted: Iter8Experiment[],
-  sortField: SortField<Iter8Experiment>,
+  unsorted: Iter8v2Experiment[],
+  sortField: SortField<Iter8v2Experiment>,
   isAscending: boolean
-): Promise<Iter8Experiment[]> => {
+): Promise<Iter8v2Experiment[]> => {
   const sorted = unsorted.sort(isAscending ? sortField.compare : (a, b) => sortField.compare(b, a));
   return Promise.resolve(sorted);
 };
