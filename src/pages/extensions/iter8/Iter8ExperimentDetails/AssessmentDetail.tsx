@@ -1,5 +1,11 @@
 import * as React from 'react';
-import { emptyv2ExperimentItem, Iter8v2Experiment, Iter8v2Info, Iter8v2VersionDetail } from '../../../../types/Iter8v2';
+import {
+  emptyv2ExperimentItem,
+  Iter8v2Experiment,
+  Iter8v2Info,
+  Iter8v2VersionDetail,
+  MetricSpec
+} from '../../../../types/Iter8v2';
 import { cellWidth, expandable, IRow, RowWrapperProps, Table, TableBody, TableHeader } from '@patternfly/react-table';
 import { connect } from 'react-redux';
 import { KialiAppState } from '../../../../store/Store';
@@ -37,6 +43,7 @@ interface AssessmentDetailProps {
   name: string;
   namespace: string;
   experimentItem: Iter8v2Experiment;
+  metricInfo: Map<string, MetricSpec>;
   fetchOp: () => void;
 }
 
@@ -96,7 +103,7 @@ class AssessmentDetailTab extends React.Component<AssessmentDetailProps, State> 
       rows: this.getRows()
     });
   }
-  renderRow(type, assessment: Iter8v2VersionDetail, metricInfo: Map<string, string>) {
+  renderRow(type, assessment: Iter8v2VersionDetail, metricAssessment: Map<string, string>) {
     return {
       cells: [
         { title: <>{type}</> },
@@ -142,11 +149,23 @@ class AssessmentDetailTab extends React.Component<AssessmentDetailProps, State> 
             <>
               {Object.keys(assessment.metricData).length &&
                 Object.keys(assessment.metricData).map((c, _) => {
+                  let desc = this.props.metricInfo[c].description;
                   return (
                     <Grid gutter="md">
-                      <GridItem span={4}>{c}</GridItem>
-                      {metricInfo.hasOwnProperty(c) ? (
-                        <GridItem span={4}>{metricInfo[c]}</GridItem>
+                      <GridItem span={4}>
+                        {c}
+                        <Tooltip
+                          key={'winnerTooltip'}
+                          aria-label={'Winner Tooltip'}
+                          position={PopoverPosition.auto}
+                          className={'health_indicator'}
+                          content={<>{desc}</>}
+                        >
+                          <KialiIcon.Info className={infoStyle} />
+                        </Tooltip>
+                      </GridItem>
+                      {metricAssessment.hasOwnProperty(c) ? (
+                        <GridItem span={4}>{metricAssessment[c]}</GridItem>
                       ) : (
                         <GridItem span={4}> </GridItem>
                       )}

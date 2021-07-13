@@ -129,6 +129,7 @@ export const Emptyv2Experiment: Iter8v2ExpDetailsInfo = {
     testingPattern: ''
   },
   analysis: emptyAnalysisInfoDetail,
+  metricInfo: new Map<string, MetricSpec>(),
   experimentType: ''
 };
 
@@ -200,6 +201,7 @@ export interface Iter8v2ExpDetailsInfo {
   duration: Durationv2;
   strategy: StrategyInfoDetail;
   analysis: AnalysisInfoDetail;
+  metricInfo: Map<string, MetricSpec>;
   experimentType: string;
 }
 
@@ -219,4 +221,12 @@ export interface CriteriaInfov2Detail {
   rewards: Reward[];
   indicators: string[];
   objectives: Objective[];
+}
+
+export interface MetricSpec {
+  description: string;
+  unit: string;
+  type: string;
+  sampleSize: string;
+  params: namedValue[];
 }

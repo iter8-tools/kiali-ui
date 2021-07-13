@@ -176,6 +176,7 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
           name={this.props.match.params.name}
           namespace={this.props.match.params.namespace}
           experimentItem={this.state.experiment.experimentItem}
+          metricInfo={this.state.experiment.metricInfo}
           fetchOp={() => this.fetchExperiment()}
         ></AssessmentDetail>
       </Tab>
