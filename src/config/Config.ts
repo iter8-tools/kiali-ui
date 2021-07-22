@@ -125,7 +125,7 @@ const conf = {
       istioConfigCreate: (namespace: string, objectType: string) => `api/namespaces/${namespace}/istio/${objectType}`,
       istioConfigDetail: (namespace: string, objectType: string, object: string) =>
         `api/namespaces/${namespace}/istio/${objectType}/${object}`,
-      iter8: `api/iter8`,
+      iter8: `api/iter8v2`,
       iter8Metrics: 'api/iter8/metrics',
       iter8Experiments: `api/iter8/experiments`,
       iter8v2Experiments: `api/iter8v2/experiments`,

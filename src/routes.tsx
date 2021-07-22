@@ -12,9 +12,7 @@ import { Paths } from './config';
 import ServiceDetailsPageContainer from './pages/ServiceDetails/ServiceDetailsPage';
 import IstioConfigNewPageContainer from './pages/IstioConfigNew/IstioConfigNewPage';
 import ExperimentListv2Page from './pages/extensions/iter8/Iter8ExperimentList/ExperimentListv2Page';
-import ExperimentCreatePageContainer from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentCreatePage';
 import ExperimentDetailsPage from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentDetailsPage';
-import ExperimentCreateFromFileContainer from './pages/extensions/iter8/Iter8ExperimentDetails/ExperimentCreateFromFile';
 import MeshPage from 'pages/Mesh/MeshPage';
 
 /**
@@ -154,14 +152,6 @@ const extensionsRoutes: Path[] = [
   {
     path: '/extensions/namespaces/:namespace/iter8/:name',
     component: ExperimentDetailsPage
-  },
-  {
-    path: '/extensions/iter8/new',
-    component: ExperimentCreatePageContainer
-  },
-  {
-    path: '/extensions/iter8/newFromFile',
-    component: ExperimentCreateFromFileContainer
   },
   {
     path: '/extensions/iter8',
