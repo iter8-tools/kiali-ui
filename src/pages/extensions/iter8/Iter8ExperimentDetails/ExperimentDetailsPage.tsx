@@ -7,7 +7,6 @@ import { Tab } from '@patternfly/react-core';
 import * as API from '../../../../services/Api';
 import * as AlertUtils from '../../../../utils/AlertUtils';
 import { Iter8v2ExpDetailsInfo, Iter8v2Info, Emptyv2Experiment } from '../../../../types/Iter8v2';
-import Iter8Dropdown from './Iter8Dropdown';
 import history from '../../../../app/History';
 import { connect } from 'react-redux';
 
@@ -142,19 +141,6 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
     this.fetchExperiment();
   };
 
-  renderRightToolbar = () => {
-    return (
-      <Iter8Dropdown
-        experimentName={this.props.match.params.name}
-        manualOverride={this.state.manualOverride}
-        canDelete={this.state.canDelete}
-        startTime={this.state.experiment ? this.state.experiment.experimentItem.startTime : ''}
-        endTime={this.state.experiment ? this.state.experiment.experimentItem.lastUpdateTime : ''}
-        phase={this.state.experiment ? this.state.experiment.experimentItem.stage : ' '}
-      />
-    );
-  };
-
   render() {
     const overviewTab = (
       <Tab eventKey={0} title="Overview" key="Overview">
@@ -182,9 +168,7 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
       </Tab>
     );
 
-    const metricsTab = <Tab eventKey={2} title="Metrics" key="Metrics"></Tab>;
-
-    const tabsArray: any[] = [overviewTab, assessmentTab, metricsTab];
+    const tabsArray: any[] = [overviewTab, assessmentTab];
     return (
       <>
         <RenderHeader
@@ -197,7 +181,6 @@ class ExperimentDetailsPage extends React.Component<Props, State> {
               manageURL={true}
             />
           }
-          actionsToolbar={this.renderRightToolbar()}
         />
         <ParameterizedTabs
           id="basic-tabs"

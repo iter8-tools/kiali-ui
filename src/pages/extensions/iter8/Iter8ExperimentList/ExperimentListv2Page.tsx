@@ -23,10 +23,6 @@ import * as AlertUtils from '../../../../utils/AlertUtils';
 import { FilterSelected, StatefulFilters } from '../../../../components/Filters/StatefulFilters';
 import history from '../../../../app/History';
 import {
-  Dropdown,
-  DropdownItem,
-  DropdownPosition,
-  DropdownToggle,
   EmptyState,
   EmptyStateBody,
   EmptyStateVariant,
@@ -252,36 +248,6 @@ class ExperimentListv2PageComponent extends React.Component<Props, State> {
 
   goNewExperimentFromFile = () => {
     history.push('/extensions/iter8/newfromfile');
-  };
-
-  // It contains a create new experiment action.
-  actionsToolbar = () => {
-    return (
-      <Dropdown
-        id="actions"
-        title="Actions"
-        toggle={<DropdownToggle onToggle={toggle => this.setState({ dropdownOpen: toggle })}>Actions</DropdownToggle>}
-        onSelect={() => this.setState({ dropdownOpen: !this.state.dropdownOpen })}
-        position={DropdownPosition.right}
-        isOpen={this.state.dropdownOpen}
-        dropdownItems={[
-          <DropdownItem
-            key="createExperiment"
-            isDisabled={!this.state.iter8v2Info.enabled}
-            onClick={() => this.goNewExperimentPage()}
-          >
-            Create New Experiment
-          </DropdownItem>,
-          <DropdownItem
-            key="createExperimentFromFile"
-            isDisabled={!this.state.iter8v2Info.enabled}
-            onClick={() => this.goNewExperimentFromFile()}
-          >
-            Create New Experiment from YAML
-          </DropdownItem>
-        ]}
-      />
-    );
   };
 
   onFilterChange = () => {
@@ -569,7 +535,6 @@ class ExperimentListv2PageComponent extends React.Component<Props, State> {
                 manageURL={true}
               />
             }
-            actionsToolbar={this.actionsToolbar()}
           />
         </div>
         <RenderContent>

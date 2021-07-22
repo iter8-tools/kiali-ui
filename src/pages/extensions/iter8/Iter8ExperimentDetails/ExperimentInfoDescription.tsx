@@ -20,8 +20,6 @@ import {
   PopoverPosition,
   Stack,
   StackItem,
-  Tab,
-  Tabs,
   Text,
   TextVariants,
   Title,
@@ -40,7 +38,6 @@ import YAML from 'yaml';
 import { KialiIcon } from '../../../../config/KialiIcon';
 import { style } from 'typestyle';
 import equal from 'fast-deep-equal';
-import { PFColors } from '../../../../components/Pf/PfColors';
 import { PFBadge } from 'components/Pf/PfBadges';
 
 interface ExperimentInfoDescriptionProps {
@@ -477,11 +474,6 @@ class ExperimentInfoDescription extends React.Component<ExperimentInfoDescriptio
                   </Card>
                 </GridItem>
               </Grid>
-            </GridItem>
-            <GridItem span={12}>
-              <Tabs isFilled={false} activeKey={0}>
-                <Tab title={'Traffic Control'} eventKey={0} style={{ backgroundColor: PFColors.White }}></Tab>
-              </Tabs>
             </GridItem>
           </Grid>
         </RenderComponentScroll>
